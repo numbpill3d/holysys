@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEITY.SYS - Divine Computing Environment</title>
+    <style>
+        /* Root Variables */
+        :root {
+            --glow-color: rgba(255, 255, 255, 0.8);
+            --holy-blue: #4a9eff;
+            --divine-gold: #ffd700;
+            --flicker-speed: 2s;
+        }
+
+        /* Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: #000;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Loading Screen */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s;
+        }
+
+        .ascii-emblem {
+            font-family: monospace;
+            white-space: pre;
+            color: var(--divine-gold);
+            text-shadow: 0 0 10px var(--divine-gold);
+            animation: emblem-pulse 2s infinite;
+            margin-bottom: 2rem;
+            font-size: 12px;
+        }
+
+        .loading-bar-container {
+            width: 300px;
+            height: 20px;
+            border: 2px solid var(--holy-blue);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 10px var(--holy-blue);
+        }
+
+        .loading-bar {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--holy-blue), #fff);
+            transition: width 0.5s ease-in-out;
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            color: var(--holy-blue);
+            text-shadow: 0 0 5px var(--holy-blue);
+        }
+
+        /* Divine HUD */
+        .divine-hud {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border: 2px solid var(--holy-blue);
+            opacity: 0.5;
+            animation: hud-glow 3s infinite alternate;
+        }
+
+        .hud-corner-tl {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .hud-corner-tr {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .hud-corner-bl {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .hud-corner-br {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Glyph Styles */
+        .hud-glyph {
+            position: absolute;
+            font-size: 2em;
+            color: var(--holy-blue);
+            text-shadow: 0 0 10px var(--holy-blue);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.3s;
+            z-index: 11;
+        }
+
+        .hud-glyph:hover {
+            transform: scale(1.2);
+        }
+
+        .glyph-tl { top: 40px; left: 40px; }
+        .glyph-tr { top: 40px; right: 40px; }
+        .glyph-bl { bottom: 40px; left: 40px; }
+        .glyph-br { bottom: 40px; right: 40px; }
+
+        /* Content Panel */
+        .content-panel {
+            position: fixed;
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--holy-blue);
+            box-shadow: 0 0 20px var(--holy-blue);
+            padding: 20px;
+            color: white;
+            z-index: 1000;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            animation: panelFade 0.3s ease-in-out;
+        }
+
+        .panel-tl { top: 100px; left: 100px; }
+        .panel-tr { top: 100px; right: 100px; }
+        .panel-bl { bottom: 100px; left: 100px; }
+        .panel-br { bottom: 100px; right: 100px; }
+
+        /* Main Terminal */
+        .terminal {
+            position: relative;
+            width: calc(100% - 200px);
+            height: calc(100vh - 100px);
+            margin: 50px auto;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 2;
+            overflow-y: auto;
+        }
+
+        .terminal-header {
+            text-align: center;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px var(--glow-color);
+            animation: flicker var(--flicker-speed) infinite;
+        }
+
+        /* Input Line */
+        .input-line {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 5px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .prompt {
+            color: var(--divine-gold);
+            margin-right: 10px;
+        }
+
+        .input-field {
+            background: transparent;
+            border: none;
+            color: #fff;
+            flex-grow: 1;
+            outline: none;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Tab System */
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            background: transparent;
+            border: 1px solid var(--holy-blue);
+            color: var(--holy-blue);
+            padding: 5px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            background: var(--holy-blue);
+            color: black;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 10px;
+            border: 1px solid rgba(74, 158, 255, 0.2);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Holy Numbers */
+        .holy-numbers {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 60px;
+            height: 100%;
+            padding: 10px;
+            font-size: 10px;
+            opacity: 0.5;
+            overflow: hidden;
+            z-index: 1;
+        }
+
+        .number-stream {
+            animation: scroll 15s linear infinite;
+        }
+
+        /* Animations */
+        @keyframes emblem-pulse {
+            0% { text-shadow: 0 0 10px var(--divine-gold); }
+            50% { text-shadow: 0 0 20px var(--divine-gold), 0 0 30px var(--divine-gold); }
+            100% { text-shadow: 0 0 10px var(--divine-gold); }
+        }
+
+        @keyframes hud-glow {
+            from { box-shadow: 0 0 5px var(--holy-blue); }
+            to { box-shadow: 0 0 15px var(--holy-blue); }
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+
+        @keyframes scroll {
+            from { transform: translateY(100%); }
+            to { transform: translateY(-100%); }
+        }
+
+        @keyframes panelFade {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* Popup Styles */
+        .popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 2px solid var(--holy-blue);
+            box-shadow: 0 0 20px var(--holy-blue);
+            padding: 20px;
+            color: white;
+            z-index: 2000;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none;
+            animation: panelFade 0.3s ease-in-out;
+        }
+
+        .popup h2 {
+            color: var(--divine-gold);
+            margin-bottom: 10px;
+        }
+
+        .popup p {
+            margin-bottom: 15px;
+        }
+
+        .popup .close-popup {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: var(--holy-blue);
+            font-size: 1.5em;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen">
+        <div class="ascii-emblem">
+           /\\\\\\\\\\          /\\\\\\\\\\
+          /\\\\\\\\\\\\\\      /\\\\\\\\\\\\\\
+         /\\\\///////\\\\    /\\\\///////\\\\
+         \\/\\\\     \\/\\\\  \\/\\\\     \\/\\\\
+          \\//\\\\    \\//\\\\  \\//\\\\    \\//\\\\
+            \\///\\\\    \\///\\\\  \\///\\\\    \\///\\\\
+               \\////\\\\\\\\\\\\\\\\    \\////\\\\\\\\\\\\\\\\
+                  \\///////\\\\\\\\       \\///////\\\\\\\\
+                         \\/////              \\/////
+        </div>
+        <div class="loading-bar-container">
+            <div class="loading-bar"></div>
+        </div>
+        <div class="loading-text">Initializing Divine Interface...</div>
+    </div>
+
+    <!-- Divine HUD -->
+    <div class="divine-hud">
+        <div class="hud-corner hud-corner-tl"></div>
+        <div class="hud-corner hud-corner-tr"></div>
+        <div class="hud-corner hud-corner-bl"></div>
+        <div class="hud-corner hud-corner-br"></div>
+        <div class="hud-status hud-status-top">DEITY.SYS - DIVINE LINK ACTIVE</div>
+        <div class="hud-status hud-status-right">HOLY PROCESSES: 7 ACTIVE</div>
+    </div>
+
+    <!-- Glyphs -->
+    <div class="hud-glyph glyph-tl" onclick="togglePanel('panel-tl')" aria-label="Open top-left panel">⌘</div>
+    <div class="hud-glyph glyph-tr" onclick="togglePanel('panel-tr')" aria-label="Open top-right panel">⎈</div>
+    <div class="hud-glyph glyph-bl" onclick="togglePanel('panel-bl')" aria-label="Open bottom-left panel">⌬</div>
+    <div class="hud-glyph glyph-br" onclick="togglePanel('panel-br')" aria-label="Open bottom-right panel">⎔</div>
+
+    <!-- Content Panels -->
+    <div id="panel-tl" class="content-panel panel-tl">
+        <span class="close-panel" onclick="togglePanel('panel-tl')" aria-label="Close panel">×</span>
+        <h2>About DEITY.SYS</h2>
+        <div class="tab-buttons">
+            <button class="tab-button active" onclick="switchTab('about', 'overview')">Overview</button>
+            <button class="tab-button" onclick="switchTab('about', 'mission')">Mission</button>
+            <button class="tab-button" onclick="switchTab('about', 'team')">Team</button>
+        </div>
+        <div id="about-overview" class="tab-content active">
+            <p>DEITY.SYS is a divine computing environment designed to bridge the gap between mortal technology and celestial wisdom.</p>
+        </div>
+        <div id="about-mission" class="tab-content">
+            <p>Our mission is to facilitate divine computation and prophecy processing through advanced technological interfaces.</p>
+        </div>
+        <div id="about-team" class="tab-content">
+            <p>Created by a council of digital mystics and quantum prophets.</p>
+        </div>
+    </div>
+
+    <!-- Main Terminal -->
+    <div class="terminal">
+        <div class="terminal-header">
+            <h1>DEITY.SYS v1.0</h1>
+            <p>Divine Computing Environment</p>
+        </div>
+
+        <div class="file-system">
+            <div class="folder">DIVINE_TERMINAL/</div>
+            <div class="file">prophecy.exe</div>
+            <div class="file">prayer_compiler.sys</div>
+            <div class="file">angel_debug.log</div>
+            <div class="file">holy_numbers.dat</div>
+            
+            <div class="folder">SACRED_PROGRAMS/</div>
+            <div class="file">revelation_viewer</div>
+            <div class="file">babel_translator</div>
+            <div class="file">divine_pattern_generator</div>
+            
+            <div class="folder">SYSTEM_PRAYERS/</div>
+            <div class="file">boot.psalm</div>
+            <div class="file">crash.litany</div>
+            <div class="file">debug.mantra</div>
+        </div>
+
+        <div class="input-line">
+            <span class="prompt">DEITY://></span>
+            <input type="text" class="input-field" placeholder="Enter divine command..." aria-label="Command input">
+        </div>
+
+        <!-- Output Display -->
+        <div class="output-display"></div>
+    </div>
+
+    <!-- Sacred Patterns Canvas -->
+    <canvas id="patternCanvas"></canvas>
+
+    <!-- Holy Numbers -->
+    <div class="holy-numbers">
+        <div class="number-stream"></div>
+    </div>
+
+    <!-- Popups -->
+    <div id="popup-about" class="popup">
+        <span class="close-popup" onclick="closePopup('popup-about')">×</span>
+        <h2>About DEITY.SYS</h2>
+        <p>DEITY.SYS is a divine computing environment designed to bridge the gap between mortal technology and celestial wisdom. Created by a council of digital mystics and quantum prophets, it facilitates divine computation and prophecy processing through advanced technological interfaces.</p>
+    </div>
+
+    <div id="popup-links" class="popup">
+        <span class="close-popup" onclick="closePopup('popup-links')">×</span>
+        <h2>Links</h2>
+        <p>Explore the celestial network:</p>
+        <ul>
+            <li><a href="#" style="color: var(--holy-blue);">Divine Repository</a></li>
+            <li><a href="#" style="color: var(--holy-blue);">Prophecy Archive</a></li>
+            <li><a href="#" style="color: var(--holy-blue);">Celestial Forums</a></li>
+        </ul>
+    </div>
+
+    <div id="popup-art" class="popup">
+        <span class="close-popup" onclick="closePopup('popup-art')">×</span>
+        <h2>Art</h2>
+        <p>Behold the sacred art of the digital mystics:</p>
+        <div style="display: flex; justify-content: center;">
+            <img src="https://via.placeholder.com/300" alt="Sacred Art" style="border: 2px solid var(--holy-blue);">
+        </div>
+    </div>
+
+    <div id="popup-misc" class="popup">
+        <span class="close-popup" onclick="closePopup('popup-misc')">×</span>
+        <h2>Miscellaneous</h2>
+        <p>Here lies the untold mysteries of DEITY.SYS:</p>
+        <ul>
+            <li>Divine Patterns</li>
+            <li>Holy Numbers</li>
+            <li>Angelic Debugging</li>
+        </ul>
+    </div>
+
+    <script>
+        // Initialize loading screen
+        document.addEventListener('DOMContentLoaded', () => {
+            const loadingScreen = document.getElementById('loadingScreen');
+            const loadingBar = document.querySelector('.loading-bar');
+            const loadingText = document.querySelector('.loading-text');
+            let progress = 0;
+
+            const loadingMessages = [
+                "Establishing Divine Connection...",
+                "Channeling Sacred Energy...",
+                "Initializing Holy Protocols...",
+                "Calibrating Divine Matrices...",
+                "Synchronizing with the Celestial Network...",
+                "Loading Divine Interface..."
+            ];
+
+            const loadingInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(loadingInterval);
+                    
+                    setTimeout(() => {
+                        loadingScreen.style.opacity = '0';
+                        setTimeout(() => {
+                            loadingScreen.style.display = 'none';
+                            initializeSystem();
+                        }, 1000);
+                    }, 500);
+                }
+
+                loadingBar.style.width = `${progress}%`;
+                const messageIndex = Math.min(
+                    Math.floor((progress / 100) * loadingMessages.length),
+                    loadingMessages.length - 1
+                );
+                loadingText.textContent = loadingMessages[messageIndex];
+            }, 200);
+        });
+
+        // Panel Toggle Function
+        function togglePanel(panelId) {
+            const panel = document.getElementById(panelId);
+            const allPanels = document.querySelectorAll('.content-panel');
+            
+            allPanels.forEach(p => {
+                if (p.id !== panelId) {
+                    p.style.display = 'none';
+                }
+            });
+
+            if (panel.style.display === 'none' || !panel.style.display) {
+                panel.style.display = 'block';
+            } else {
+                panel.style.display = 'none';
+            }
+        }
+
+        // Tab System
+        function switchTab(group, tabName) {
+            document.querySelectorAll(`[id^="${group}-"]`).forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(`${group}-${tabName}`).classList.add('active');
+            
+            const parentPanel = document.getElementById(`${group}-${tabName}`).closest('.content-panel');
+            parentPanel.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            event.target.classList.add('active');
+        }
+
+        // Terminal Command Processing
+        function processCommand(command) {
+            const outputDisplay = document.querySelector('.output-display');
+            let response = '';
+            
+            if (command.includes('prophecy')) {
+                response = '⚠ Prophecy module activated ⚠\nReceiving divine transmission...';
+            } else if (command.includes('debug')) {
+                response = 'Angel Debug Console initialized...\nAwaiting divine intervention...';
+            } else if (command.includes('pattern')) {
+                response = 'Divine pattern generation initiated...';
+                generatePattern();
+            } else if (command.includes('help')) {
+                response = `Available commands:
+- prophecy: Access the prophecy module
+- debug: Open angel debug console
+- pattern: Generate divine patterns
+- pray: Submit system prayer
+- compile: Compile divine code
+- exit: Close connection
+- about: Learn about DEITY.SYS
+- links: Explore celestial links
+- art: View sacred art
+- misc: Discover miscellaneous mysteries`;
+            } else if (command.includes('about')) {
+                response = 'Opening About page...';
+                openPopup('popup-about');
+            } else if (command.includes('links')) {
+                response = 'Opening Links page...';
+                openPopup('popup-links');
+            } else if (command.includes('art')) {
+                response = 'Opening Art page...';
+                openPopup('popup-art');
+            } else if (command.includes('misc')) {
+                response = 'Opening Miscellaneous page...';
+                openPopup('popup-misc');
+            } else {
+                response = 'Command not recognized by the divine interpreter';
+            }
+            
+            outputDisplay.innerHTML += `<div class="command-line">> ${command}</div><div class="response">${response}</div>`;
+            outputDisplay.scrollTop = outputDisplay.scrollHeight;
+        }
+
+        // Initialize System
+        function initializeSystem() {
+            // Initialize canvas
+            const canvas = document.getElementById('patternCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+
+            // Set up terminal input
+            const input = document.querySelector('.input-field');
+            input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    const command = this.value.toLowerCase();
+                    processCommand(command);
+                    this.value = '';
+                }
+            });
+
+            // Initialize HUD updates
+            setInterval(() => {
+                const rightStatus = document.querySelector('.hud-status-right');
+                const activeProcesses = Math.floor(Math.random() * 5) + 5;
+                rightStatus.textContent = `HOLY PROCESSES: ${activeProcesses} ACTIVE`;
+            }, 3000);
+
+            // Generate holy numbers
+            function generateHolyNumbers() {
+                const numberStream = document.querySelector('.number-stream');
+                let numbers = '';
+                for (let i = 0; i < 100; i++) {
+                    numbers += Math.floor(Math.random() * 9999).toString(16).padStart(4, '0') + '<br>';
+                }
+                numberStream.innerHTML = numbers;
+            }
+            setInterval(generateHolyNumbers, 1000);
+
+            // Generate sacred patterns
+            function generatePattern() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
+                
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                const radius = Math.min(canvas.width, canvas.height) / 4;
+                
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i * Math.PI * 2) / 6;
+                    const x = centerX + Math.cos(angle) * radius;
+                    const y = centerY + Math.sin(angle) * radius;
+                    
+                    ctx.beginPath();
+                    ctx.arc(x, y, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+            setInterval(generatePattern, 3000);
+        }
+
+        // Open Popup
+        function openPopup(popupId) {
+            const popup = document.getElementById(popupId);
+            popup.style.display = 'block';
+        }
+
+        // Close Popup
+        function closePopup(popupId) {
+            const popup = document.getElementById(popupId);
+            popup.style.display = 'none';
+        }
+
+        // Close panels on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.content-panel, .popup').forEach(panel => {
+                    panel.style.display = 'none';
+                });
+            }
+        });
+    </script>
+</body>
+</html>
